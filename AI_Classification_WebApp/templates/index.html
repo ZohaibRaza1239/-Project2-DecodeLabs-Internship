@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Classification WebApp - Iris Flower Classification</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1>🤖 AI Classification System</h1>
+                <p class="subtitle">Iris Flower Classification using Supervised Learning</p>
+                <div class="status-bar">
+                    <span id="modelStatus" class="status-badge {% if model_loaded %}loaded{% else %}error{% endif %}">
+                        {% if model_loaded %}✓ Model Loaded{% else %}✗ Model Not Loaded{% endif %}
+                    </span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Tabs Navigation -->
+            <nav class="tabs">
+                <button class="tab-btn active" data-tab="single">Single Prediction</button>
+                <button class="tab-btn" data-tab="batch">Batch Prediction</button>
+                <button class="tab-btn" data-tab="info">Model Information</button>
+            </nav>
+
+            <!-- Tab 1: Single Prediction -->
+            <section class="tab-content active" id="single">
+                <div class="form-section">
+                    <h2>📊 Single Flower Classification</h2>
+                    <p class="description">Enter flower measurements to predict its species</p>
+                    
+                    <form id="singlePredictionForm" class="prediction-form">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="sepal_length">Sepal Length (cm)</label>
+                                <input type="number" id="sepal_length" name="sepal_length" 
+                                       placeholder="e.g., 5.1" step="0.1" min="0" required>
+                                <span class="range-hint">Range: 4.3 - 7.9 cm</span>
+                            </div>
+                            <div class="form-group">
+                                <label for="sepal_width">Sepal Width (cm)</label>
+                                <input type="number" id="sepal_width" name="sepal_width" 
+                                       placeholder="e.g., 3.5" step="0.1" min="0" required>
+                                <span class="range-hint">Range: 2.0 - 4.4 cm</span>
+                            </div>
+                            <div class="form-group">
+                                <label for="petal_length">Petal Length (cm)</label>
+                                <input type="number" id="petal_length" name="petal_length" 
+                                       placeholder="e.g., 1.4" step="0.1" min="0" required>
+                                <span class="range-hint">Range: 1.0 - 6.9 cm</span>
+                            </div>
+                            <div class="form-group">
+                                <label for="petal_width">Petal Width (cm)</label>
+                                <input type="number" id="petal_width" name="petal_width" 
+                                       placeholder="e.g., 0.2" step="0.1" min="0" required>
+                                <span class="range-hint">Range: 0.1 - 2.5 cm</span>
+                            </div>
+                        </div>
+
+                        <div class="button-group">
+                            <button type="submit" class="btn btn-primary">Predict Species</button>
+                            <button type="reset" class="btn btn-secondary">Clear Form</button>
+                        </div>
+                    </form>
+
+                    <!-- Results -->
+                    <div id="singleResults" class="results hidden">
+                        <h3>Prediction Result</h3>
+                        <div class="result-card">
+                            <div class="prediction-result">
+                                <h4>Predicted Species:</h4>
+                                <p class="species-name" id="predictedSpecies">-</p>
+                            </div>
+                            <div class="confidence-section">
+                                <h4>Confidence Scores:</h4>
+                                <div id="probabilitiesContainer"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Error Display -->
+                    <div id="singleError" class="error hidden"></div>
+                </div>
+            </section>
+
+            <!-- Tab 2: Batch Prediction -->
+            <section class="tab-content" id="batch">
+                <div class="form-section">
+                    <h2>📁 Batch Prediction</h2>
+                    <p class="description">Upload a CSV file with flower measurements for batch classification</p>
+                    
+                    <div class="batch-upload">
+                        <div class="upload-area" id="uploadArea">
+                            <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                            <p>Drag and drop CSV file here or click to select</p>
+                            <input type="file" id="csvFile" accept=".csv" hidden>
+                        </div>
+
+                        <div class="csv-template">
+                            <h4>📋 CSV Format Template:</h4>
+                            <pre><code>sepal_length,sepal_width,petal_length,petal_width
+5.1,3.5,1.4,0.2
+7.0,3.2,4.7,1.4
+6.3,3.3,6.0,2.5</code></pre>
+                        </div>
+
+                        <div class="button-group">
+                            <button id="downloadTemplate" class="btn btn-secondary">Download Template</button>
+                            <button id="predictBatch" class="btn btn-primary" disabled>Process Batch</button>
+                        </div>
+                    </div>
+
+                    <!-- Batch Results -->
+                    <div id="batchResults" class="results hidden">
+                        <h3>Batch Prediction Complete</h3>
+                        <p id="batchMessage"></p>
+                        <button id="downloadResults" class="btn btn-primary">Download Results CSV</button>
+                    </div>
+
+                    <!-- Batch Error -->
+                    <div id="batchError" class="error hidden"></div>
+                </div>
+            </section>
+
+            <!-- Tab 3: Model Information -->
+            <section class="tab-content" id="info">
+                <div class="info-section">
+                    <h2>ℹ️ Model & Dataset Information</h2>
+                    
+                    <div class="info-grid">
+                        <div class="info-card">
+                            <h3>Model Details</h3>
+                            <div id="modelDetails">
+                                <p>Loading...</p>
+                            </div>
+                        </div>
+
+                        <div class="info-card">
+                            <h3>Dataset Statistics</h3>
+                            <div id="datasetStats">
+                                <p>Loading...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="info-card full-width">
+                        <h3>Feature Ranges</h3>
+                        <div id="featureRanges"></div>
+                    </div>
+
+                    <div class="info-card full-width">
+                        <h3>Project Information</h3>
+                        <ul class="project-info">
+                            <li><strong>Project:</strong> Iris Flower Classification</li>
+                            <li><strong>Learning Type:</strong> Supervised Learning</li>
+                            <li><strong>Algorithm:</strong> Decision Tree Classifier</li>
+                            <li><strong>Dataset:</strong> Iris Flower Dataset</li>
+                            <li><strong>Train/Test Split:</strong> 80% / 20%</li>
+                            <li><strong>Status:</strong> Production Ready</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>&copy; 2026 AI Classification WebApp</p>
+            <p>Iris Flower Classification using Machine Learning</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
